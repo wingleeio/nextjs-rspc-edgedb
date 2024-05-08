@@ -11,21 +11,23 @@ use rspc::integrations::httpz::Request;
 use std::{
     error::Error,
     net::{Ipv6Addr, SocketAddr},
-    sync::Mutex,
+    sync::{Arc, Mutex},
 };
 use tower_http::cors::{Any, CorsLayer};
 
 mod core;
 mod middleware;
 mod router;
+mod service;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv::dotenv().expect("Failed to read .env file");
     let conn = edgedb_tokio::create_client().await?;
-    let val: i64 = conn.query_required_single("select 1 + 1", &()).await?;
+    let client = Arc::new(conn);
+    let val: i64 = client.query_required_single("select 1 + 1", &()).await?;
 
-    println!("1 + 1 = {}", val);
+    println!("1 + 2 = {}", val);
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, 4000));
 

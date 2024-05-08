@@ -34,6 +34,7 @@ bcrypt = "0.15.1"
 edgedb-tokio = "0.5.0"
 edgedb-protocol = "0.6.0"
 edgedb-derive = "0.5.1"
+chrono = "0.4.38"
 
 [patch.crates-io]
 specta = { git = "https://github.com/oscartbeaumont/specta", rev = "ca8151f16e6fc0fd3a18bef1a1fd35f481f9588f" }
