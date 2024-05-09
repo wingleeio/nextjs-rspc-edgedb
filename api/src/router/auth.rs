@@ -58,7 +58,7 @@ async fn login(ctx: Context, args: LoginArgs) -> Result<(), Error> {
     let user = users
         .get_user_by_email(email.as_str())
         .await
-        .map_err(|e| Error::new(ErrorCode::BadRequest, e.to_string()))?;
+        .map_err(|_| Error::new(ErrorCode::BadRequest, "Unable to find user.".to_string()))?;
 
     let valid = tokio::task::spawn_blocking(move || {
         bcrypt::verify(password, &user.hashed_password).unwrap_or(false)
