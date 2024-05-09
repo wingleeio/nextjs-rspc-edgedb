@@ -29,26 +29,13 @@ struct RegisterArgs {
     password: String,
 }
 
-#[derive(Serialize, Type)]
-struct VerifiedUser {
-    id: Uuid,
-    email: String,
-}
-
-async fn verify(ctx: Context, id: Uuid) -> Result<VerifiedUser, Error> {
-    let (auth, users) = query!(ctx, Auth, Users);
-    let session = auth
-        .validate_session(id)
-        .await
-        .map_err(|e| Error::new(ErrorCode::BadRequest, e.to_string()))?;
-    let user = users
-        .get_user_by_id(session.user_id)
-        .await
-        .map_err(|e| Error::new(ErrorCode::BadRequest, e.to_string()))?;
-    Ok(VerifiedUser {
-        id: user.id,
-        email: user.email,
-    })
+async fn verify(ctx: Context, id: Uuid) -> Result<Option<Session>, Error> {
+    let auth = query!(ctx, Auth);
+    let session = match auth.validate_session(id).await {
+        Ok(session) => session,
+        Err(_) => return Ok(None),
+    };
+    Ok(Some(session))
 }
 
 async fn login(ctx: Context, args: LoginArgs) -> Result<(), Error> {
@@ -60,18 +47,18 @@ async fn login(ctx: Context, args: LoginArgs) -> Result<(), Error> {
         .await
         .map_err(|_| Error::new(ErrorCode::BadRequest, "Unable to find user.".to_string()))?;
 
-    let valid = tokio::task::spawn_blocking(move || {
+    tokio::task::spawn_blocking(move || {
         bcrypt::verify(password, &user.hashed_password).unwrap_or(false)
     })
     .await
-    .map_err(|e| Error::new(ErrorCode::InternalServerError, e.to_string()))?;
-
-    if !valid {
-        return Err(Error::new(
+    .map_err(|e| Error::new(ErrorCode::InternalServerError, e.to_string()))?
+    .then(|| ())
+    .ok_or_else(|| {
+        Error::new(
             ErrorCode::BadRequest,
             "Invalid email or password".to_string(),
-        ));
-    }
+        )
+    })?;
 
     let session = auth
         .create_session(user.id)

@@ -1,17 +1,27 @@
 use chrono::{DateTime, Utc};
 use edgedb_protocol::model::Uuid;
 use edgedb_tokio::{Client, Queryable};
+use serde::Serialize;
+use specta::Type;
 use std::{error::Error, sync::Arc};
 
 pub struct Auth {
     client: Arc<Client>,
 }
 
-#[derive(Debug, Queryable)]
+#[derive(Debug, Queryable, Serialize, Type)]
+pub struct SessionUser {
+    pub id: Uuid,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+}
+
+#[derive(Debug, Queryable, Serialize, Type)]
 pub struct Session {
     pub id: Uuid,
     pub expires_at: DateTime<Utc>,
-    pub user_id: Uuid,
+    pub user: SessionUser,
 }
 
 impl Auth {
@@ -48,9 +58,14 @@ impl Auth {
         let args = (session_id,);
         let query = r#"
             select Session {
-                id_str,
+                id,
                 expires_at,
-                user_id := .user.id
+                user: {
+                    id,
+                    email,
+                    first_name,
+                    last_name
+                }
             }
             filter .id = <uuid>$0
         "#;
