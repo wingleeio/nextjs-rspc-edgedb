@@ -28,7 +28,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let auth = service::auth::Auth::new(client.clone());
     let users = service::users::Users::new(client.clone());
 
-    let val: i64 = client.query_required_single("select 1 + 1", &()).await?;
+    let val: i64 = client
+        .query_required_single("select count((select Session))", &())
+        .await?;
 
     println!("1 + 2 = {}", val);
 
@@ -38,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
-        .allow_origin("http://localtest.me:5173".parse::<HeaderValue>().unwrap())
+        .allow_origin("http://localtest.me:3000".parse::<HeaderValue>().unwrap())
         .allow_headers([AUTHORIZATION, CONTENT_TYPE])
         .allow_credentials(true);
 

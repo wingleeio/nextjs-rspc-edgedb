@@ -20,26 +20,18 @@ impl Auth {
     }
 
     pub async fn create_session(&self, user_id: Uuid) -> Result<Uuid, Box<dyn Error>> {
-        self.delete_expired_sessions(user_id).await?;
         let args = (user_id,);
         let query = r#"
+            with deleted := (
+                delete Session
+                filter .user = (select User filter .id = <uuid>$0) and .expires_at < datetime_of_statement()
+            )
             select (insert Session {
                 user := (select User filter .id = <uuid>$0)
             }) .id
         "#;
         let result: Uuid = self.client.query_required_single(query, &(args)).await?;
         Ok(result)
-    }
-
-    pub async fn delete_expired_sessions(&self, user_id: Uuid) -> Result<(), Box<dyn Error>> {
-        let args = (user_id,);
-        let query = r#"
-            delete Session
-            filter .user = (select User filter .id = <uuid>$0)
-            filter .expires < now()
-        "#;
-        self.client.execute(query, &(args)).await?;
-        Ok(())
     }
 
     pub async fn invalidate_session(&self, session_id: Uuid) -> Result<(), Box<dyn Error>> {
