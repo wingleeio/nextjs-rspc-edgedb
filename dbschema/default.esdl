@@ -15,17 +15,21 @@ module default {
     type User extending Node {
         required first_name: str;
         required last_name: str;
-        required email: str;
+        required email: str {
+            constraint exclusive;
+        };
         required hashed_password: str;
         blogs := .<owner[is Blog];
         posts := .<author[is Post];
         sessions := .<user[is Session];
+
+        index on ((.email));
     }
 
     type Session extending Node {
         required user: User;
         required expires_at: datetime {
-            rewrite insert using (datetime_of_statement() + <duration>'1 week');
+            rewrite insert using (datetime_of_statement() + <duration>'168 hours');
         }
     }
 

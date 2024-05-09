@@ -2,7 +2,17 @@
 
 export type Procedures = {
     queries: 
+        { key: "auth.logout", input: never, result: null } | 
+        { key: "auth.verify", input: string, result: VerifiedUser } | 
         { key: "version", input: never, result: string },
-    mutations: never,
+    mutations: 
+        { key: "auth.login", input: LoginArgs, result: null } | 
+        { key: "auth.register", input: RegisterArgs, result: null },
     subscriptions: never
 };
+
+export type LoginArgs = { email: string; password: string }
+
+export type RegisterArgs = { email: string; first_name: string; last_name: string; password: string }
+
+export type VerifiedUser = { id: string; email: string }

@@ -1,16 +1,17 @@
-use edgedb_protocol::model::{Datetime, Uuid};
+use chrono::{DateTime, Utc};
+use edgedb_protocol::model::Uuid;
 use edgedb_tokio::{Client, Queryable};
-use std::{error::Error, sync::Arc, time::SystemTime};
+use std::{error::Error, sync::Arc};
 
-struct Auth {
+pub struct Auth {
     client: Arc<Client>,
 }
 
 #[derive(Debug, Queryable)]
-struct Session {
-    id_str: String,
-    expires_at: Datetime,
-    user_id_str: String,
+pub struct Session {
+    pub id: Uuid,
+    pub expires_at: DateTime<Utc>,
+    pub user_id: Uuid,
 }
 
 impl Auth {
@@ -18,16 +19,15 @@ impl Auth {
         Self { client }
     }
 
-    pub async fn create_session(&self, user_id: Uuid) -> Result<String, Box<dyn Error>> {
+    pub async fn create_session(&self, user_id: Uuid) -> Result<Uuid, Box<dyn Error>> {
         self.delete_expired_sessions(user_id).await?;
         let args = (user_id,);
         let query = r#"
-            insert Session {
-                user := (select User filter .id <uuid>$0)
-            }
-            returning { <str>.id }
+            select (insert Session {
+                user := (select User filter .id = <uuid>$0)
+            }) .id
         "#;
-        let result: String = self.client.query_required_single(query, &(args)).await?;
+        let result: Uuid = self.client.query_required_single(query, &(args)).await?;
         Ok(result)
     }
 
@@ -35,7 +35,7 @@ impl Auth {
         let args = (user_id,);
         let query = r#"
             delete Session
-            filter .user = (select User filter .id <uuid>$0)
+            filter .user = (select User filter .id = <uuid>$0)
             filter .expires < now()
         "#;
         self.client.execute(query, &(args)).await?;
@@ -58,7 +58,7 @@ impl Auth {
             select Session {
                 id_str,
                 expires_at,
-                user_id_str := <str>.user.id
+                user_id := .user.id
             }
             filter .id = <uuid>$0
         "#;
@@ -68,8 +68,8 @@ impl Auth {
 
     pub async fn validate_session(&self, session_id: Uuid) -> Result<Session, Box<dyn Error>> {
         let session = self.get_session(session_id).await?;
-        let now = Datetime::try_from(SystemTime::now()).unwrap();
-        if session.expires_at < now {
+
+        if session.expires_at < Utc::now() {
             self.invalidate_session(session_id).await?;
             return Err("Session expired".into());
         }

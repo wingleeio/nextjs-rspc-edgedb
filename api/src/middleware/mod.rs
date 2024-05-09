@@ -1,8 +1,9 @@
 use std::sync::Mutex;
 
-use rspc::integrations::httpz::Request;
+use rspc::integrations::httpz::{CookieJar, Request};
+use uuid::Uuid;
 
-use crate::core::context;
+use crate::{core::context, service::auth::Auth};
 
 pub fn cookies() -> context::middleware!() {
     |mw, mut ctx| async move {
@@ -16,6 +17,27 @@ pub fn cookies() -> context::middleware!() {
         })?;
 
         context::add!(ctx, cookies);
+
+        Ok(mw.next(ctx))
+    }
+}
+
+pub fn auth() -> context::middleware!() {
+    |mw, mut ctx| async move {
+        let (cookies, auth) = context::query!(ctx, CookieJar, Auth);
+        let cookie = cookies.get("auth_session").ok_or_else(|| {
+            rspc::Error::new(rspc::ErrorCode::BadRequest, "Not authenticated".to_string())
+        })?;
+
+        let token = Uuid::parse_str(cookie.value())
+            .map_err(|e| rspc::Error::new(rspc::ErrorCode::BadRequest, e.to_string()))?;
+
+        let session = auth
+            .validate_session(token)
+            .await
+            .map_err(|e| rspc::Error::new(rspc::ErrorCode::BadRequest, e.to_string()))?;
+
+        context::add!(ctx, session);
 
         Ok(mw.next(ctx))
     }

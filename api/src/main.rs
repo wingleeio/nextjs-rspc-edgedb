@@ -1,7 +1,7 @@
 use axum::{
     http::{
         header::{AUTHORIZATION, CONTENT_TYPE},
-        Method,
+        HeaderValue, Method,
     },
     Router,
 };
@@ -13,7 +13,7 @@ use std::{
     net::{Ipv6Addr, SocketAddr},
     sync::{Arc, Mutex},
 };
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 
 mod core;
 mod middleware;
@@ -23,8 +23,11 @@ mod service;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv::dotenv().expect("Failed to read .env file");
-    let conn = edgedb_tokio::create_client().await?;
-    let client = Arc::new(conn);
+    let client = Arc::new(edgedb_tokio::create_client().await?);
+
+    let auth = service::auth::Auth::new(client.clone());
+    let users = service::users::Users::new(client.clone());
+
     let val: i64 = client.query_required_single("select 1 + 1", &()).await?;
 
     println!("1 + 2 = {}", val);
@@ -35,10 +38,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
-        .allow_origin(Any)
-        .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
+        .allow_origin("http://localtest.me:5173".parse::<HeaderValue>().unwrap())
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE])
+        .allow_credentials(true);
 
     let mut ctx = Context::new();
+
+    context::add!(ctx, auth);
+    context::add!(ctx, users);
 
     let app = Router::new()
         .nest(
