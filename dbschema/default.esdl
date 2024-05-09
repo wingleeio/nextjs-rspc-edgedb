@@ -19,6 +19,7 @@ module default {
             constraint exclusive;
         };
         required hashed_password: str;
+        
         blogs := .<owner[is Blog];
         posts := .<author[is Post];
         sessions := .<user[is Session];
@@ -31,6 +32,13 @@ module default {
         required expires_at: datetime {
             rewrite insert using (datetime_of_statement() + <duration>'168 hours');
         }
+        required last_accessed_at: datetime {
+            default := datetime_current();
+        }
+        os_name: str;
+        os_version: str;
+        browser_name: str;
+        browser_version: str;
     }
 
     type Blog extending Node {

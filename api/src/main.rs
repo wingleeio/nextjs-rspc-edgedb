@@ -28,12 +28,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let auth = service::auth::Auth::new(client.clone());
     let users = service::users::Users::new(client.clone());
 
-    let val: i64 = client
-        .query_required_single("select count((select Session))", &())
-        .await?;
-
-    println!("1 + 2 = {}", val);
-
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, 4000));
 
     let router = router::get();
@@ -62,7 +56,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .layer(cors);
 
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::ERROR)
         .init();
 
     println!("Listening on http://{}", addr);

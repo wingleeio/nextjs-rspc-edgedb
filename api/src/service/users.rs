@@ -39,6 +39,7 @@ impl Users {
         Ok(user)
     }
 
+    #[allow(dead_code)]
     pub async fn get_user_by_id(&self, user_id: Uuid) -> Result<User, Box<dyn Error>> {
         let args = (user_id,);
         let query = r#"
