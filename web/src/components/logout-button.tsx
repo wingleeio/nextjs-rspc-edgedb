@@ -11,7 +11,7 @@ import { Button } from "./ui/button";
 export const LogoutButton = () => {
   const router = useRouter();
   const [sessions, setSessions] = useState<SessionWithMetadata[]>([]);
-
+  console.log(sessions);
   useEffect(() => {
     api.query(["auth.getSessions"]).then((response) => {
       setSessions(response);
@@ -28,9 +28,7 @@ export const LogoutButton = () => {
             </div>
             <div className="text-muted-foreground text-sm">{formatIsoDate(session.last_accessed_at)}</div>
           </div>
-          <div>
-            <Badge>This Device</Badge>
-          </div>
+          <div>{session.is_current && <Badge className="rounded-sm">This Device</Badge>}</div>
         </div>
       ))}
       <Button
