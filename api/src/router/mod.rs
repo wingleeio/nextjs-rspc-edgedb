@@ -3,6 +3,7 @@ use rspc::{BuiltRouter, ExportConfig, Rspc};
 use std::{path::PathBuf, sync::Arc};
 
 mod auth;
+mod blogs;
 
 pub const R: Rspc<Context> = Rspc::new();
 
@@ -11,6 +12,7 @@ pub fn get() -> Arc<BuiltRouter<Context>> {
         .router()
         .procedure("version", R.with(cookies()).query(|_, _: ()| Ok("0.0.2")))
         .merge("auth", auth::mount())
+        .merge("blogs", blogs::mount())
         .build()
         .unwrap()
         .arced();

@@ -13,21 +13,21 @@ export const api = initRspc<Procedures>({
         return wsLink({ url: WS_URL })({ op, next });
       }
 
-      return next({ op });
+      return httpLink({
+        url: RPC_URL,
+        fetch: (input, init) => {
+          return fetch(input, {
+            ...init,
+            cache: "no-store",
+            credentials: "include",
+            headers: {
+              Connection: "keep-alive",
+              ...(op.context?.headers ?? {}),
+            },
+          });
+        },
+      })({ op, next });
     },
-    httpLink({
-      url: RPC_URL,
-      fetch: (input, init) => {
-        return fetch(input, {
-          ...init,
-          cache: "no-store",
-          credentials: "include",
-          headers: {
-            Connection: "keep-alive",
-          },
-        });
-      },
-    }),
   ],
   onError: (error) => {
     console.error(error);

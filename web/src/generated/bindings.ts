@@ -5,12 +5,15 @@ export type Procedures = {
         { key: "auth.getSessions", input: never, result: SessionWithMetadata[] } | 
         { key: "auth.logout", input: never, result: null } | 
         { key: "auth.verify", input: string, result: Session | null } | 
+        { key: "blogs.getMyBlogs", input: never, result: Blog[] } | 
         { key: "version", input: never, result: string },
     mutations: 
         { key: "auth.login", input: LoginArgs, result: null } | 
         { key: "auth.register", input: RegisterArgs, result: null },
     subscriptions: never
 };
+
+export type Blog = { id: string; title: string }
 
 export type LoginArgs = { email: string; password: string }
 

@@ -27,6 +27,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let auth = service::auth::Auth::new(client.clone());
     let users = service::users::Users::new(client.clone());
+    let blogs = service::blogs::Blogs::new(client.clone());
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, 4000));
 
@@ -42,6 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     context::add!(ctx, auth);
     context::add!(ctx, users);
+    context::add!(ctx, blogs);
 
     let app = Router::new()
         .nest(
